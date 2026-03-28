@@ -19,13 +19,21 @@ body {
   min-height: 100vh;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
-  background:
-    linear-gradient(180deg, #fbfdff 0%, #f4f7fb 100%);
+  background: linear-gradient(180deg, #fbfdff 0%, #f4f7fb 100%);
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
 }
 
 .cmc-page {
@@ -82,6 +90,7 @@ a {
 
 .topbar-button {
   padding: 0.8rem 1rem;
+  border: 0;
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
@@ -181,7 +190,8 @@ a {
 .info-list,
 .news-row p,
 .market-table-head,
-.market-table-row > span:last-child {
+.market-table-row > span:last-child,
+.empty-state span {
   color: var(--muted);
 }
 
@@ -226,7 +236,7 @@ a {
 
 .section-head-row {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
   padding: 1.15rem 1.2rem 0;
@@ -237,6 +247,70 @@ a {
   margin: 0;
   font-size: 1.45rem;
   letter-spacing: -0.03em;
+}
+
+.table-controls {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 1.2rem 0.2rem;
+}
+
+.tab-row,
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.market-tab,
+.filter-chip {
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.62rem 0.9rem;
+  font-weight: 600;
+}
+
+.market-tab.active,
+.filter-chip.active {
+  background: #e8f0ff;
+  border-color: #bfd3ff;
+  color: var(--accent);
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.search-shell {
+  display: grid;
+  gap: 0.35rem;
+  min-width: min(100%, 320px);
+}
+
+.search-shell span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.search-shell input {
+  width: 100%;
+  padding: 0.82rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.search-shell input:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.16);
+  border-color: #9fbfff;
 }
 
 .market-table {
@@ -295,6 +369,12 @@ a {
 .coin-cell em {
   font-style: normal;
   font-size: 0.82rem;
+}
+
+.empty-state {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.2rem 0;
 }
 
 .news-list {
@@ -391,7 +471,8 @@ a {
   .topnav,
   .section-head-row,
   .market-table-head,
-  .market-table-row {
+  .market-table-row,
+  .table-toolbar {
     display: grid;
   }
 

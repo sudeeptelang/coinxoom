@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 type CoinId = "bitcoin" | "ethereum" | "solana" | "avalanche-2" | "chainlink" | "ripple" | "dogecoin";
+type MarketTab = "all" | "gainers" | "losers" | "large-cap";
+type FilterChip = "all" | "positive" | "negative" | "above-100b";
 
 type CoinData = {
   usd: number;
@@ -37,6 +39,20 @@ const coins: { id: CoinId; label: string; name: string }[] = [
   { id: "chainlink", label: "LINK", name: "Chainlink" },
   { id: "ripple", label: "XRP", name: "XRP" },
   { id: "dogecoin", label: "DOGE", name: "Dogecoin" },
+];
+
+const marketTabs: { id: MarketTab; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "gainers", label: "Top Gainers" },
+  { id: "losers", label: "Top Losers" },
+  { id: "large-cap", label: "Large Cap" },
+];
+
+const filterChips: { id: FilterChip; label: string }[] = [
+  { id: "all", label: "All Caps" },
+  { id: "positive", label: "+24h" },
+  { id: "negative", label: "-24h" },
+  { id: "above-100b", label: "$100B+" },
 ];
 
 const fallbackPrices: PriceResponse = {
@@ -126,6 +142,9 @@ export function MarketDashboard() {
   const [news, setNews] = useState<NewsItem[]>(fallbackNews);
   const [marketStatus, setMarketStatus] = useState("Loading live market data...");
   const [newsStatus, setNewsStatus] = useState("Loading crypto headlines...");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<MarketTab>("all");
+  const [activeFilter, setActiveFilter] = useState<FilterChip>("all");
 
   useEffect(() => {
     let active = true;
@@ -190,6 +209,37 @@ export function MarketDashboard() {
       topLosers: [...sortedByChange].reverse().slice(0, 3),
     };
   }, [prices, rankedCoins]);
+
+  const visibleCoins = useMemo(() => {
+    let filtered = [...rankedCoins];
+
+    if (activeTab === "gainers") {
+      filtered.sort((a, b) => prices[b.id].usd_24h_change - prices[a.id].usd_24h_change);
+    }
+    if (activeTab === "losers") {
+      filtered.sort((a, b) => prices[a.id].usd_24h_change - prices[b.id].usd_24h_change);
+    }
+    if (activeTab === "large-cap") {
+      filtered = filtered.filter((coin) => prices[coin.id].usd_market_cap >= 100_000_000_000);
+    }
+
+    if (activeFilter === "positive") {
+      filtered = filtered.filter((coin) => prices[coin.id].usd_24h_change > 0);
+    }
+    if (activeFilter === "negative") {
+      filtered = filtered.filter((coin) => prices[coin.id].usd_24h_change < 0);
+    }
+    if (activeFilter === "above-100b") {
+      filtered = filtered.filter((coin) => prices[coin.id].usd_market_cap >= 100_000_000_000);
+    }
+
+    const query = searchTerm.trim().toLowerCase();
+    if (query) {
+      filtered = filtered.filter((coin) => coin.name.toLowerCase().includes(query) || coin.label.toLowerCase().includes(query));
+    }
+
+    return filtered;
+  }, [activeFilter, activeTab, prices, rankedCoins, searchTerm]);
 
   return (
     <div className="cmc-page">
@@ -257,6 +307,45 @@ export function MarketDashboard() {
                 <p className="section-note">Live prices refresh every 60 seconds through the server-side market route.</p>
               </div>
 
+              <div className="table-controls" aria-label="Market controls">
+                <div className="tab-row" role="tablist" aria-label="Market views">
+                  {marketTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={`market-tab ${activeTab === tab.id ? "active" : ""}`}
+                      onClick={() => setActiveTab(tab.id)}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="table-toolbar">
+                  <label className="search-shell" aria-label="Search coins">
+                    <span>Search</span>
+                    <input
+                      type="search"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="Search by coin or ticker"
+                    />
+                  </label>
+                  <div className="chip-row" aria-label="Quick filters">
+                    {filterChips.map((chip) => (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        className={`filter-chip ${activeFilter === chip.id ? "active" : ""}`}
+                        onClick={() => setActiveFilter(chip.id)}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="market-table">
                 <div className="market-table-head">
                   <span>#</span>
@@ -266,7 +355,7 @@ export function MarketDashboard() {
                   <span>Market Cap</span>
                   <span>Last Updated</span>
                 </div>
-                {rankedCoins.map((coin, index) => (
+                {visibleCoins.map((coin, index) => (
                   <div className="market-table-row" key={coin.id}>
                     <span>{index + 1}</span>
                     <div className="coin-cell">
@@ -282,6 +371,12 @@ export function MarketDashboard() {
                     <span>{new Date(prices[coin.id].last_updated_at * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                   </div>
                 ))}
+                {visibleCoins.length === 0 ? (
+                  <div className="empty-state">
+                    <strong>No assets match those filters.</strong>
+                    <span>Try clearing the search or switching back to the `All` tab.</span>
+                  </div>
+                ) : null}
               </div>
             </section>
 
@@ -297,7 +392,7 @@ export function MarketDashboard() {
                 {news.slice(0, 18).map((item, index) => (
                   <a className={`news-row ${index === 0 ? "featured-news" : ""}`} href={item.link} key={`${item.link}-${index}`} target="_blank" rel="noreferrer">
                     <div>
-                      <p className="news-source">{item.source} • {formatRelativeTime(item.publishedAt)}</p>
+                      <p className="news-source">{item.source} | {formatRelativeTime(item.publishedAt)}</p>
                       <h3>{item.title}</h3>
                       <p>{item.summary}</p>
                     </div>
@@ -352,7 +447,7 @@ export function MarketDashboard() {
               <ul className="info-list">
                 <li>Live crypto prices via CoinGecko through `/api/prices`</li>
                 <li>Crypto headlines aggregated through `/api/news`</li>
-                <li>Layout intentionally shifted toward CoinMarketCap-style utility</li>
+                <li>Search, tabs, and quick filters now sit above the rankings table</li>
               </ul>
             </section>
           </aside>
